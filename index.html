@@ -94,6 +94,18 @@
             font-style: italic;
             color: #666;
         }
+        .tab-button {
+            padding: 10px 20px;
+            border: none;
+            background-color: #ddd;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .tab-button.active {
+            background-color: #3498db;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -112,38 +124,79 @@
             </div>
         </div>
 
-        <div id="divisao-content" style="display: none;">
-            <div class="dashboard-section">
-                <h2>Grupos na Divisão Selecionada</h2>
-                <div id="grupos-list" class="group-list"></div>
+        <div class="dashboard-section">
+            <div class="controls">
+                <button onclick="showTab('normal')" id="tab-normal" class="tab-button active">Valores Totais</button>
+                <button onclick="showTab('ponderado')" id="tab-ponderado" class="tab-button">Valores Ponderados</button>
             </div>
+        </div>
 
+        <div id="divisao-content" style="display: none;">
+            <div id="tab-content-normal">
+                <div class="dashboard-section">
+                    <h2>Grupos na Divisão Selecionada</h2>
+                    <div id="grupos-list" class="group-list"></div>
+                </div>
+
+                <div class="dashboard-section">
+                    <h2>Top 10 Redes Sociais Mais Relevantes</h2>
+                    <div class="summary" id="social-summary"></div>
+                    <div class="chart-container">
+                        <canvas id="social-chart"></canvas>
+                    </div>
+                </div>
+
+                <div class="dashboard-section">
+                    <h2>Análise Comparativa</h2>
+                    <div class="summary" id="comparison-summary"></div>
+                    <div class="comparison-charts">
+                        <div class="chart-container">
+                            <canvas id="policy-patent-chart"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="academic-impact-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-section">
+                    <h2>Distribuição por Tipo de Mídia</h2>
+                    <div class="summary" id="media-summary"></div>
+                    <div class="chart-container">
+                        <canvas id="media-distribution-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-content-ponderado" style="display: none;">
+            <!-- Cópia exata das seções acima, mas para dados _pond -->
             <div class="dashboard-section">
-                <h2>Top 10 Redes Sociais Mais Relevantes</h2>
-                <div class="summary" id="social-summary"></div>
+                <h2>Top 10 Redes Sociais (Valores Ponderados)</h2>
+                <div class="summary" id="social-summary-pond"></div>
                 <div class="chart-container">
-                    <canvas id="social-chart"></canvas>
+                    <canvas id="social-chart-pond"></canvas>
                 </div>
             </div>
 
             <div class="dashboard-section">
-                <h2>Análise Comparativa</h2>
-                <div class="summary" id="comparison-summary"></div>
+                <h2>Análise Comparativa (Ponderado)</h2>
+                <div class="summary" id="comparison-summary-pond"></div>
                 <div class="comparison-charts">
                     <div class="chart-container">
-                        <canvas id="policy-patent-chart"></canvas>
+                        <canvas id="policy-patent-chart-pond"></canvas>
                     </div>
                     <div class="chart-container">
-                        <canvas id="academic-impact-chart"></canvas>
+                        <canvas id="academic-impact-chart-pond"></canvas>
                     </div>
                 </div>
             </div>
 
             <div class="dashboard-section">
-                <h2>Distribuição por Tipo de Mídia</h2>
-                <div class="summary" id="media-summary"></div>
+                <h2>Distribuição por Tipo de Mídia (Ponderado)</h2>
+                <div class="summary" id="media-summary-pond"></div>
                 <div class="chart-container">
-                    <canvas id="media-distribution-chart"></canvas>
+                    <canvas id="media-distribution-chart-pond"></canvas>
                 </div>
             </div>
         </div>
@@ -155,6 +208,15 @@
         // Variáveis globais
         let divisoes = {};
         let socialChart, policyPatentChart, academicImpactChart, mediaDistributionChart;
+        let socialChartPond;
+
+        function showTab(tab) {
+            document.getElementById('tab-content-normal').style.display = (tab === 'normal') ? 'block' : 'none';
+            document.getElementById('tab-content-ponderado').style.display = (tab === 'ponderado') ? 'block' : 'none';
+
+            document.getElementById('tab-normal').classList.toggle('active', tab === 'normal');
+            document.getElementById('tab-ponderado').classList.toggle('active', tab === 'ponderado');
+        }
 
         // Carregar dados do JSON
         async function loadData() {
@@ -265,9 +327,18 @@
             updatePolicyPatentChart(divisao);
             updateAcademicImpactChart(divisao);
             updateMediaDistributionChart(divisaoTotals);
+
+            updateSocialChartPond(divisaoTotals);
+            updatePolicyPatentChartPond(divisao);
+            updateAcademicImpactChartPond(divisao);
+            updateMediaDistributionChartPond(divisaoTotals);
+
+
             
             // Atualizar resumos textuais
             updateSummaryTexts(divisao, divisaoTotals);
+            updateSummaryTextsPond(divisao, divisaoTotals);
+
         }
 
         function updateGruposList(divisao) {
@@ -283,26 +354,26 @@
         }
 
         function calculateDivisaoTotals(divisao) {
-            const totals = {
-                News_mentions: 0,
-                Blog_mentions: 0,
-                Policy_mentions: 0,
-                Patent_mentions: 0,
-                X_mentions: 0,
-                Peer_review_mentions: 0,
-                Weibo_mentions: 0,
-                Facebook_mentions: 0,
-                Wikipedia_mentions: 0,
-                GooglePlus_mentions: 0,
-                LinkedIn_mentions: 0,
-                Reddit_mentions: 0,
-                Pinterest_mentions: 0,
-                F1000_mentions: 0,
-                QA_mentions: 0,
-                Video_mentions: 0,
-                Syllabi_mentions: 0,
-                Mendeley_readers: 0,
-                Dimensions_citations: 0,
+           const totals = {
+                News_mentions: 0, News_mentions_pond: 0,
+                Blog_mentions: 0, Blog_mentions_pond: 0,
+                Policy_mentions: 0, Policy_mentions_pond: 0,
+                Patent_mentions: 0, Patent_mentions_pond: 0,
+                X_mentions: 0, X_mentions_pond: 0,
+                Peer_review_mentions: 0, Peer_review_mentions_pond: 0,
+                Weibo_mentions: 0, Weibo_mentions_pond: 0,
+                Facebook_mentions: 0, Facebook_mentions_pond: 0,
+                Wikipedia_mentions: 0, Wikipedia_mentions_pond: 0,
+                GooglePlus_mentions: 0, GooglePlus_mentions_pond: 0,
+                LinkedIn_mentions: 0, LinkedIn_mentions_pond: 0,
+                Reddit_mentions: 0, Reddit_mentions_pond: 0,
+                Pinterest_mentions: 0, Pinterest_mentions_pond: 0,
+                F1000_mentions: 0, F1000_mentions_pond: 0,
+                QA_mentions: 0, QA_mentions_pond: 0,
+                Video_mentions: 0, Video_mentions_pond: 0,
+                Syllabi_mentions: 0, Syllabi_mentions_pond: 0,
+                Mendeley_readers: 0, Number_of_Mendeley_readers_pond: 0,
+                Dimensions_citations: 0, Number_of_Dimensions_citations_pond: 0,
                 Total_mentions: 0
             };
             
@@ -337,7 +408,7 @@
                 { label: 'Q&A', value: totals.QA_mentions },
                 { label: 'Syllabi', value: totals.Syllabi_mentions }
             ];
-            
+       
             // Ordenar por valor e pegar top 10
             socialData.sort((a, b) => b.value - a.value);
             const top10 = socialData.slice(0, 10);
@@ -388,6 +459,81 @@
                 }
             });
         }
+
+
+
+        function updateSocialChartPond(totals) {
+            const socialDataPond = [
+                { label: 'Twitter (X)', value: totals.X_mentions_pond },
+                { label: 'News', value: totals.News_mentions_pond },
+                { label: 'Facebook', value: totals.Facebook_mentions_pond },
+                { label: 'Wikipedia', value: totals.Wikipedia_mentions_pond },
+                { label: 'Blogs', value: totals.Blog_mentions_pond },
+                { label: 'Policy Documents', value: totals.Policy_mentions_pond },
+                { label: 'Patents', value: totals.Patent_mentions_pond },
+                { label: 'Videos', value: totals.Video_mentions_pond },
+                { label: 'Peer Reviews', value: totals.Peer_review_mentions_pond },
+                { label: 'Reddit', value: totals.Reddit_mentions_pond },
+                { label: 'LinkedIn', value: totals.LinkedIn_mentions_pond },
+                { label: 'Pinterest', value: totals.Pinterest_mentions_pond },
+                { label: 'Weibo', value: totals.Weibo_mentions_pond },
+                { label: 'Google+', value: totals.GooglePlus_mentions_pond },
+                { label: 'F1000', value: totals.F1000_mentions_pond },
+                { label: 'Q&A', value: totals.QA_mentions_pond },
+                { label: 'Syllabi', value: totals.Syllabi_mentions_pond }
+            ];
+       
+            // Ordenar por valor e pegar top 10
+            socialDataPond.sort((a, b) => b.value - a.value);
+            const top10 = socialDataPond.slice(0, 10);
+            
+            const ctx = document.getElementById('social-chart-pond').getContext('2d');
+            
+            if (socialChartPond) {
+                socialChartPond.destroy();
+            }
+            
+            socialChartPond = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: top10.map(item => item.label),
+                    datasets: [{
+                        label: 'Menções',
+                        data: top10.map(item => item.value),
+                        backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Número de Menções'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Top 10 Redes Sociais por Menções-ponderado'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.parsed.y.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
 
         function updatePolicyPatentChart(divisao) {
             const groups = divisao.grupos.map(grupo => grupo.descgrupo);
@@ -449,6 +595,130 @@
                 }
             });
         }
+
+        function updatePolicyPatentChartPond(divisao) {
+            const groups = divisao.grupos.map(grupo => grupo.descgrupo);
+            const policyData = divisao.grupos.map(grupo => grupo.Policy_mentions_pond || 0);
+            const patentData = divisao.grupos.map(grupo => grupo.Patent_mentions_pond || 0);
+
+            const ctx = document.getElementById('policy-patent-chart-pond').getContext('2d');
+
+            if (window.policyPatentChartPond) {
+                window.policyPatentChartPond.destroy();
+            }
+
+            window.policyPatentChartPond = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: groups,
+                    datasets: [
+                        {
+                            label: 'Pontuação em Políticas (Ponderado)',
+                            data: policyData,
+                            backgroundColor: 'rgba(75, 192, 192, 0.7)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Pontuação em Patentes (Ponderado)',
+                            data: patentData,
+                            backgroundColor: 'rgba(153, 102, 255, 0.7)',
+                            borderColor: 'rgba(153, 102, 255, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Pontuação Ponderada'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Impacto em Políticas e Patentes por Grupo (Ponderado)'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.parsed.y.toLocaleString()}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateAcademicImpactChartPond(divisao) {
+            const groups = divisao.grupos.map(grupo => grupo.descgrupo);
+            const mendeleyData = divisao.grupos.map(grupo => grupo.Mendeley_readers_pond || 0);
+            const dimensionsData = divisao.grupos.map(grupo => grupo.Dimensions_citations_pond || 0);
+
+            const ctx = document.getElementById('academic-impact-chart-pond').getContext('2d');
+
+            if (window.academicImpactChartPond) {
+                window.academicImpactChartPond.destroy();
+            }
+
+            window.academicImpactChartPond = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: groups,
+                    datasets: [
+                        {
+                            label: 'Leitores no Mendeley (Ponderado)',
+                            data: mendeleyData,
+                            backgroundColor: 'rgba(255, 159, 64, 0.7)',
+                            borderColor: 'rgba(255, 159, 64, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Citações no Dimensions (Ponderado)',
+                            data: dimensionsData,
+                            backgroundColor: 'rgba(255, 99, 132, 0.7)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Pontuação Ponderada'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Impacto Acadêmico por Grupo (Ponderado)'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.parsed.y.toLocaleString()}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+
 
         function updateAcademicImpactChart(divisao) {
             const groups = divisao.grupos.map(grupo => grupo.descgrupo);
@@ -583,6 +853,79 @@
             });
         }
 
+
+        function updateMediaDistributionChartPond(totals) {
+            const mediaTypes = {
+                'Redes Sociais': (totals.X_mentions_pond || 0) + 
+                                (totals.Facebook_mentions_pond || 0) + 
+                                (totals.LinkedIn_mentions_pond || 0) + 
+                                (totals.Reddit_mentions_pond || 0) + 
+                                (totals.Pinterest_mentions_pond || 0) + 
+                                (totals.GooglePlus_mentions_pond || 0) + 
+                                (totals.Weibo_mentions_pond || 0),
+                'Mídia Tradicional': (totals.News_mentions_pond || 0) + (totals.Blog_mentions_pond || 0),
+                'Acadêmico': (totals.Peer_review_mentions_pond || 0) + 
+                            (totals.F1000_mentions_pond || 0) + 
+                            (totals.QA_mentions_pond || 0) + 
+                            (totals.Syllabi_mentions_pond || 0) + 
+                            (totals.Wikipedia_mentions_pond || 0),
+                'Políticas/Patentes': (totals.Policy_mentions_pond || 0) + (totals.Patent_mentions_pond || 0),
+                'Multimídia': totals.Video_mentions_pond || 0
+            };
+
+            const ctx = document.getElementById('media-distribution-chart-pond').getContext('2d');
+
+            if (window.mediaDistributionChartPond) {
+                window.mediaDistributionChartPond.destroy();
+            }
+
+            window.mediaDistributionChartPond = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: Object.keys(mediaTypes),
+                    datasets: [{
+                        data: Object.values(mediaTypes),
+                        backgroundColor: [
+                            'rgba(54, 162, 235, 0.7)',
+                            'rgba(255, 99, 132, 0.7)',
+                            'rgba(75, 192, 192, 0.7)',
+                            'rgba(153, 102, 255, 0.7)',
+                            'rgba(255, 159, 64, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(153, 102, 255, 1)',
+                            'rgba(255, 159, 64, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Distribuição de Menções por Tipo de Mídia (Ponderado)'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.raw || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = Math.round((value / total) * 100);
+                                    return `${label}: ${value.toLocaleString()} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
         function updateSummaryTexts(divisao, totals) {
             // Resumo das redes sociais
             const socialSummary = document.getElementById('social-summary');
@@ -620,8 +963,99 @@
             `;
         }
 
+        function updateSummaryTextsPond(divisao, totals) {
+            
+            const socialSummary = document.getElementById('social-summary-pond');
+            const topSocial = [
+                { name: 'Twitter (X)', value: totals.X_mentions_pond || 0 },
+                { name: 'Notícias', value: totals.News_mentions_pond || 0 },
+                { name: 'Facebook', value: totals.Facebook_mentions_pond || 0 }
+            ].sort((a, b) => b.value - a.value);
+
+            // Calcular total de pontuação ponderada (soma dos campos _pond)
+            const totalPondMentions =
+                (totals.X_mentions_pond || 0) +
+                (totals.News_mentions_pond || 0) +
+                (totals.Facebook_mentions_pond || 0) +
+                (totals.Wikipedia_mentions_pond || 0) +
+                (totals.Blog_mentions_pond || 0) +
+                (totals.Policy_mentions_pond || 0) +
+                (totals.Patent_mentions_pond || 0) +
+                (totals.Video_mentions_pond || 0) +
+                (totals.Peer_review_mentions_pond || 0) +
+                (totals.Reddit_mentions_pond || 0) +
+                (totals.LinkedIn_mentions_pond || 0) +
+                (totals.Pinterest_mentions_pond || 0) +
+                (totals.Weibo_mentions_pond || 0) +
+                (totals.GooglePlus_mentions_pond || 0) +
+                (totals.F1000_mentions_pond || 0) +
+                (totals.QA_mentions_pond || 0) +
+                (totals.Syllabi_mentions_pond || 0);
+
+            socialSummary.innerHTML = `
+                <p>A divisão <span class="highlight">${divisao.descdivisao}</span> possui um total ponderado de <span class="highlight">${totalPondMentions.toLocaleString()}</span> pontos de atenção (ponderados) em diversas plataformas.</p>
+                <p>A plataforma com maior pontuação é <span class="highlight">${topSocial[0].name}</span> com <span class="highlight">${topSocial[0].value.toLocaleString()}</span> pontos, seguida por <span class="highlight">${topSocial[1].name}</span> (${topSocial[1].value.toLocaleString()}) e <span class="highlight">${topSocial[2].name}</span> (${topSocial[2].value.toLocaleString()}).</p>
+            `;
+            
+            const comparisonSummary = document.getElementById('comparison-summary-pond');
+            const totalMentions = totals.Total_mentions || 1;
+            const policyRatio = (totals.Policy_mentions_pond || 0) / totalMentions * 100;
+            const patentRatio = (totals.Patent_mentions_pond || 0) / totalMentions * 100;
+            const academicImpact = ((totals.Number_of_Mendeley_readers_pond || 0) + (totals.Number_of_Dimensions_citations_pond || 0)) / totalMentions;
+
+            comparisonSummary.innerHTML = `
+                <p>Esta divisão demonstra <span class="highlight">${policyRatio.toFixed(1)}%</span> de menções ponderadas em documentos de política e <span class="highlight">${patentRatio.toFixed(1)}%</span> em patentes.</p>
+                <p>O impacto acadêmico ponderado (leitores e citações) é <span class="highlight">${academicImpact.toFixed(1)}x</span> maior que o número total de menções, indicando ${academicImpact > 10 ? 'forte' : academicImpact > 5 ? 'moderado' : 'limitado'} engajamento acadêmico.</p>
+            `;
+
+            const mediaSummaryPond = document.getElementById('media-summary-pond');
+            const totalPond = Object.values(totals).reduce((acc, val) => acc + (typeof val === 'number' ? val : 0), 0);
+
+            const socialMediaPond = ((totals.X_mentions_pond || 0) + (totals.Facebook_mentions_pond || 0) + (totals.LinkedIn_mentions_pond || 0) + (totals.Reddit_mentions_pond || 0) + (totals.Pinterest_mentions_pond || 0) + (totals.GooglePlus_mentions_pond || 0) + (totals.Weibo_mentions_pond || 0)) / totalPond * 100;
+
+            const traditionalMediaPond = ((totals.News_mentions_pond || 0) + (totals.Blog_mentions_pond || 0)) / totalPond * 100;
+
+            mediaSummaryPond.innerHTML = `
+                <p>A distribuição ponderada mostra que <span class="highlight">${socialMediaPond.toFixed(1)}%</span> das pontuações vêm de redes sociais, enquanto <span class="highlight">${traditionalMediaPond.toFixed(1)}%</span> vêm da mídia tradicional.</p>
+                <p>O conteúdo acadêmico responde por <span class="highlight">${(((totals.Peer_review_mentions_pond || 0) + (totals.F1000_mentions_pond || 0) + (totals.QA_mentions_pond || 0) + (totals.Syllabi_mentions_pond || 0) + (totals.Wikipedia_mentions_pond || 0)) / totalPond * 100).toFixed(1)}%</span> das pontuações totais.</p>
+            `;
+
+            const mediaSummary = document.getElementById('media-summary-pond');
+            const socialMediaPercentage = (
+                (totals.X_mentions_pond || 0) +
+                (totals.Facebook_mentions_pond || 0) +
+                (totals.LinkedIn_mentions_pond || 0) +
+                (totals.Reddit_mentions_pond || 0) +
+                (totals.Pinterest_mentions_pond || 0) +
+                (totals.GooglePlus_mentions_pond || 0) +
+                (totals.Weibo_mentions_pond || 0)
+            ) / totalMentions * 100;
+
+            const traditionalMediaPercentage = (
+                (totals.News_mentions_pond || 0) +
+                (totals.Blog_mentions_pond || 0)
+            ) / totalMentions * 100;
+
+
+
+
+            mediaSummary.innerHTML = `
+                <p>A distribuição de menções ponderadas mostra que <span class="highlight">${socialMediaPercentage.toFixed(1)}%</span> ocorrem em redes sociais, enquanto <span class="highlight">${traditionalMediaPercentage.toFixed(1)}%</span> são em mídia tradicional (notícias e blogs).</p>
+                <p>O conteúdo acadêmico representa <span class="highlight">${(
+                    (
+                        (totals.Peer_review_mentions_pond || 0) +
+                        (totals.F1000_mentions_pond || 0) +
+                        (totals.QA_mentions_pond || 0) +
+                        (totals.Syllabi_mentions_pond || 0) +
+                        (totals.Wikipedia_mentions_pond || 0)
+                    ) / totalMentions * 100
+                ).toFixed(1)}%</span> das menções totais.</p>
+            `;
+        }
+
         // Iniciar carregamento dos dados quando a página carregar
         document.addEventListener('DOMContentLoaded', loadData);
     </script>
 </body>
+    // finalizado em 18/05/2025 com aba de valores totais e ponderados        
 </html>
