@@ -256,6 +256,16 @@
 
             document.getElementById('tab-normal').classList.toggle('active', tab === 'normal');
             document.getElementById('tab-ponderado').classList.toggle('active', tab === 'ponderado');
+
+            if (tab === 'ponderado') {
+                // Recriar o gráfico quando aba for exibida
+                const selectedDivisao = document.getElementById('divisao-select').value;
+                if (selectedDivisao && divisoes[selectedDivisao]) {
+                    const divisao = divisoes[selectedDivisao];
+                    const divisaoTotalspond = calculateDivisaoTotalspond(divisao);
+                    updateSocialChartPond(divisaoTotalspond);
+                }
+            }
         }
 
         // Carregar dados do JSON
@@ -309,6 +319,30 @@
                     );
                 }
                 
+                if (!item.Total_mentions_pond) {
+                    item.Total_mentions_pond = (
+                        (item.News_mentions_pond || 0) +
+                        (item.Blog_mentions_pond || 0) +
+                        (item.Policy_mentions_pond || 0) +
+                        (item.Patent_mentions_pond || 0) +
+                        (item.X_mentions_pond || 0) +
+                        (item.Peer_review_mentions_pond || 0) +
+                        (item.Weibo_mentions_pond || 0) +
+                        (item.Facebook_mentions_pond || 0) +
+                        (item.Wikipedia_mentions_pond || 0) +
+                        (item.GooglePlus_mentions_pond || 0) +
+                        (item.LinkedIn_mentions_pond || 0) +
+                        (item.Reddit_mentions_pond || 0) +
+                        (item.Pinterest_mentions_pond || 0) +
+                        (item.F1000_mentions_pond || 0) +
+                        (item.QA_mentions_pond || 0) +
+                        (item.Video_mentions_pond || 0) +
+                        (item.Syllabi_mentions_pond || 0) +
+                        (item.Mendeley_readers_pond || 0) +
+                        (item.Dimensions_citations_pond || 0)
+                    );
+                }
+
                 const divisaoKey = item.divisao || item.descdivisao;
                 
                 if (!divisoes[divisaoKey]) {
@@ -361,23 +395,22 @@
             
             // Calcular totais para a divisão
             const divisaoTotals = calculateDivisaoTotals(divisao);
-            
+            const divisaoTotalspond = calculateDivisaoTotalspond(divisao);            
+
             // Atualizar gráficos e resumos
             updateSocialChart(divisaoTotals);
             updatePolicyPatentChart(divisao);
             updateAcademicImpactChart(divisao);
             updateMediaDistributionChart(divisaoTotals);
 
-            updateSocialChartPond(divisaoTotals);
+            updateSocialChartPond(divisaoTotalspond);
             updatePolicyPatentChartPond(divisao);
             updateAcademicImpactChartPond(divisao);
-            updateMediaDistributionChartPond(divisaoTotals);
-
-
+            updateMediaDistributionChartPond(divisaoTotalspond);
             
             // Atualizar resumos textuais
             updateSummaryTexts(divisao, divisaoTotals);
-            updateSummaryTextsPond(divisao, divisaoTotals);
+            updateSummaryTextsPond(divisao, divisaoTotalspond);
 
         }
 
@@ -395,26 +428,23 @@
 
         function calculateDivisaoTotals(divisao) {
            const totals = {
-                News_mentions: 0, News_mentions_pond: 0,
-                Blog_mentions: 0, Blog_mentions_pond: 0,
-                Policy_mentions: 0, Policy_mentions_pond: 0,
-                Patent_mentions: 0, Patent_mentions_pond: 0,
-                X_mentions: 0, X_mentions_pond: 0,
-                Peer_review_mentions: 0, Peer_review_mentions_pond: 0,
-                Weibo_mentions: 0, Weibo_mentions_pond: 0,
-                Facebook_mentions: 0, Facebook_mentions_pond: 0,
-                Wikipedia_mentions: 0, Wikipedia_mentions_pond: 0,
-                GooglePlus_mentions: 0, GooglePlus_mentions_pond: 0,
-                LinkedIn_mentions: 0, LinkedIn_mentions_pond: 0,
-                Reddit_mentions: 0, Reddit_mentions_pond: 0,
-                Pinterest_mentions: 0, Pinterest_mentions_pond: 0,
-                F1000_mentions: 0, F1000_mentions_pond: 0,
-                QA_mentions: 0, QA_mentions_pond: 0,
-                Video_mentions: 0, Video_mentions_pond: 0,
-                Syllabi_mentions: 0, Syllabi_mentions_pond: 0,
-                Mendeley_readers: 0, Number_of_Mendeley_readers_pond: 0,
-                Dimensions_citations: 0, Number_of_Dimensions_citations_pond: 0,
-                Total_mentions: 0
+                News_mentions: 0,
+                Blog_mentions: 0,
+                Policy_mentions: 0,
+                Patent_mentions: 0,
+                X_mentions: 0,
+                Peer_review_mentions: 0,
+                Weibo_mentions: 0,
+                Facebook_mentions: 0,
+                Wikipedia_mentions: 0,
+                GooglePlus_mentions: 0,
+                LinkedIn_mentions: 0,
+                Reddit_mentions: 0,
+                Pinterest_mentions: 0,
+                F1000_mentions: 0,
+                QA_mentions: 0,
+                Video_mentions: 0,
+                Syllabi_mentions: 0
             };
             
             divisao.grupos.forEach(grupo => {
@@ -424,8 +454,61 @@
                     }
                 }
             });
-            
+
+            // Imprimir os valores individuais
+            console.log("Valores por tipo de menção:");
+            for (const key in totals) {
+                console.log(`${key}: ${totals[key].toLocaleString()}`);
+            }
+
+            // Calcular total geral
+            totals.Total_mentions = Object.values(totals).reduce((acc, val) => acc + (typeof val === 'number' ? val : 0), 0);
+
             return totals;
+        }
+
+        function calculateDivisaoTotalspond(divisao) {
+           const totalspond = {
+                News_mentions_pond: 0,
+                Blog_mentions_pond: 0,
+                Policy_mentions_pond: 0,
+                Patent_mentions_pond: 0,
+                X_mentions_pond: 0,
+                Peer_review_mentions_pond: 0,
+                Weibo_mentions_pond: 0,
+                Facebook_mentions_pond: 0,
+                Wikipedia_mentions_pond: 0,
+                GooglePlus_mentions_pond: 0,
+                LinkedIn_mentions_pond: 0,
+                Reddit_mentions_pond: 0,
+                Pinterest_mentions_pond: 0,
+                F1000_mentions_pond: 0,
+                QA_mentions_pond: 0,
+                Video_mentions_pond: 0,
+                Syllabi_mentions_pond: 0
+            };
+        
+            divisao.grupos.forEach(grupo => {
+                for (const key in totalspond) {
+                    if (grupo[key]) {
+                        totalspond[key] += grupo[key];
+                    }
+                }
+            });
+
+            // Imprimir os valores individuais
+            console.log("Valores por tipo de menção:");
+            for (const key in totalspond) {
+                console.log(`${key}: ${totalspond[key].toLocaleString()}`);
+            }
+
+            // Calcular total geral
+            totalspond.Total_mentions = Object.values(totalspond).reduce((acc, val) => acc + (typeof val === 'number' ? val : 0), 0);
+
+            // Imprimir o total geral
+            console.log("Total de menções:", totalspond.Total_mentions.toLocaleString());
+
+            return totalspond;
         }
 
         function updateSocialChart(totals) {
@@ -756,8 +839,6 @@
             });
         }
 
-
-
         function updateAcademicImpactChart(divisao) {
             const groups = divisao.grupos.map(grupo => grupo.descgrupo);
             const mendeleyData = divisao.grupos.map(grupo => grupo.Mendeley_readers || 0);
@@ -967,14 +1048,50 @@
         function updateSummaryTexts(divisao, totals) {
             // Resumo das redes sociais
             const socialSummary = document.getElementById('social-summary');
-            const topSocial = [
+            const socialData = [
                 { name: 'Twitter (X)', value: totals.X_mentions || 0 },
                 { name: 'Notícias', value: totals.News_mentions || 0 },
-                { name: 'Facebook', value: totals.Facebook_mentions || 0 }
-            ].sort((a, b) => b.value - a.value);
+                { name: 'Facebook', value: totals.Facebook_mentions || 0 },
+                { name: 'Wikipedia', value: totals.Wikipedia_mentions || 0 },
+                { name: 'Blog', value: totals.Blog_mentions || 0 },
+                { name: 'Policy', value: totals.Policy_mentions || 0 },
+                { name: 'Patent', value: totals.Patent_mentions || 0 },
+                { name: 'Video', value: totals.Video_mentions || 0 },
+                { name: 'Peer review', value: totals.Peer_review_mentions || 0 },
+                { name: 'Reedit', value: totals.Reddit_mentions || 0 },
+                { name: 'LinkdIn', value: totals.LinkedIn_mentions || 0 },
+                { name: 'Pinterest', value: totals.Pinterest_mentions || 0 },
+                { name: 'Weibo', value: totals.Weibo_mentions || 0 },
+                { name: 'Google Plus', value: totals.GooglePlus_mentions || 0 },
+                { name: 'F1000', value: totals.F1000_mentions || 0 },
+                { name: 'QA', value: totals.QA_mentions || 0 },
+                { name: 'Syllab', value: totals.Syllabi_mentions || 0 }      
+            ];
+
+            const topSocial = socialData.sort((a, b) => b.value - a.value).slice(0, 3);
             
+            // Calcular total de pontuação ponderada (soma dos campos _pond)
+            const tMentions =
+                (totals.X_mentions || 0) +
+                (totals.News_mentions || 0) +
+                (totals.Facebook_mentions || 0) +
+                (totals.Wikipedia_mentions || 0) +
+                (totals.Blog_mentions || 0) +
+                (totals.Policy_mentions || 0) +
+                (totals.Patent_mentions || 0) +
+                (totals.Video_mentions || 0) +
+                (totals.Peer_review_mentions || 0) +
+                (totals.Reddit_mentions || 0) +
+                (totals.LinkedIn_mentions || 0) +
+                (totals.Pinterest_mentions || 0) +
+                (totals.Weibo_mentions || 0) +
+                (totals.GooglePlus_mentions || 0) +
+                (totals.F1000_mentions || 0) +
+                (totals.QA_mentions || 0) +
+                (totals.Syllabi_mentions || 0);
+
             socialSummary.innerHTML = `
-                <p>A divisão <span class="highlight">${divisao.descdivisao}</span> possui um total de <span class="highlight">${(totals.Total_mentions || 0).toLocaleString()}</span> menções em diversas plataformas.</p>
+                <p>A divisão <span class="highlight">${divisao.descdivisao}</span> possui um total de <span class="highlight">${tMentions.toLocaleString()}</span> menções em diversas plataformas.</p>
                 <p>A plataforma mais relevante é <span class="highlight">${topSocial[0].name}</span> com <span class="highlight">${topSocial[0].value.toLocaleString()}</span> menções, seguida por <span class="highlight">${topSocial[1].name}</span> (${topSocial[1].value.toLocaleString()}) e <span class="highlight">${topSocial[2].name}</span> (${topSocial[2].value.toLocaleString()}).</p>
             `;
             
@@ -1004,10 +1121,24 @@
         function updateSummaryTextsPond(divisao, totals) {
             
             const socialSummary = document.getElementById('social-summary-pond');
-            const topSocial = [
+            const topSocialpond = [
                 { name: 'Twitter (X)', value: totals.X_mentions_pond || 0 },
                 { name: 'Notícias', value: totals.News_mentions_pond || 0 },
-                { name: 'Facebook', value: totals.Facebook_mentions_pond || 0 }
+                { name: 'Facebook', value: totals.Facebook_mentions_pond || 0 },
+                { name: 'Wikipedia', value: totals.Wikipedia_mentions_pond || 0 },
+                { name: 'Blog', value: totals.Blog_mentions_pond || 0 },
+                { name: 'Policy', value: totals.Policy_mentions_pond || 0 },
+                { name: 'Patent', value: totals.Patent_mentions_pond || 0 },
+                { name: 'Video', value: totals.Video_mentions_pond || 0 },
+                { name: 'Peer review', value: totals.Peer_review_mentions_pond || 0 },
+                { name: 'Reedit', value: totals.Reddit_mentions_pond || 0 },
+                { name: 'LinkdIn', value: totals.LinkedIn_mentions_pond || 0 },
+                { name: 'Pinterest', value: totals.Pinterest_mentions_pond || 0 },
+                { name: 'Weibo', value: totals.Weibo_mentions_pond || 0 },
+                { name: 'Google Plus', value: totals.GooglePlus_mentions_pond || 0 },
+                { name: 'F1000', value: totals.F1000_mentions_pond || 0 },
+                { name: 'QA', value: totals.QA_mentions_pond || 0 },
+                { name: 'Syllab', value: totals.Syllabi_mentions_pond || 0 }
             ].sort((a, b) => b.value - a.value);
 
             // Calcular total de pontuação ponderada (soma dos campos _pond)
@@ -1030,27 +1161,62 @@
                 (totals.QA_mentions_pond || 0) +
                 (totals.Syllabi_mentions_pond || 0);
 
-            socialSummary.innerHTML = `
+            socialSummary.innerHTML =` 
                 <p>A divisão <span class="highlight">${divisao.descdivisao}</span> possui um total ponderado de <span class="highlight">${totalPondMentions.toLocaleString()}</span> pontos de atenção (ponderados) em diversas plataformas.</p>
-                <p>A plataforma com maior pontuação é <span class="highlight">${topSocial[0].name}</span> com <span class="highlight">${topSocial[0].value.toLocaleString()}</span> pontos, seguida por <span class="highlight">${topSocial[1].name}</span> (${topSocial[1].value.toLocaleString()}) e <span class="highlight">${topSocial[2].name}</span> (${topSocial[2].value.toLocaleString()}).</p>
+                <p>A plataforma com maior pontuação é <span class="highlight">${topSocialpond[0].name}</span> com <span class="highlight">${topSocialpond[0].value.toLocaleString()}</span> pontos, seguida por <span class="highlight">${topSocialpond[1].name}</span> (${topSocialpond[1].value.toLocaleString()}) e <span class="highlight">${topSocialpond[2].name}</span> (${topSocialpond[2].value.toLocaleString()}).</p>
             `;
             
+            const totalMentions_pond = totals.Total_mentions_pond || (
+                (totals.X_mentions_pond || 0) +
+                (totals.News_mentions_pond || 0) +
+                (totals.Facebook_mentions_pond || 0) +
+                (totals.Wikipedia_mentions_pond || 0) +
+                (totals.Blog_mentions_pond || 0) +
+                (totals.Policy_mentions_pond || 0) +
+                (totals.Patent_mentions_pond || 0) +
+                (totals.Video_mentions_pond || 0) +
+                (totals.Peer_review_mentions_pond || 0) +
+                (totals.Reddit_mentions_pond || 0) +
+                (totals.LinkedIn_mentions_pond || 0) +
+                (totals.Pinterest_mentions_pond || 0) +
+                (totals.Weibo_mentions_pond || 0) +
+                (totals.GooglePlus_mentions_pond || 0) +
+                (totals.F1000_mentions_pond || 0) +
+                (totals.QA_mentions_pond || 0) +
+                (totals.Syllabi_mentions_pond || 0)
+            );
             const comparisonSummary = document.getElementById('comparison-summary-pond');
-            const totalMentions = totals.Total_mentions || 1;
-            const policyRatio = (totals.Policy_mentions_pond || 0) / totalMentions * 100;
-            const patentRatio = (totals.Patent_mentions_pond || 0) / totalMentions * 100;
-            const academicImpact = ((totals.Number_of_Mendeley_readers_pond || 0) + (totals.Number_of_Dimensions_citations_pond || 0)) / totalMentions;
+            const policyRatio = (totals.Policy_mentions_pond || 0) / totalMentions_pond * 100;
+            const patentRatio = (totals.Patent_mentions_pond || 0) / totalMentions_pond * 100;
+            const academicImpact = ((totals.Number_of_Mendeley_readers_pond || 0) + (totals.Number_of_Dimensions_citations_pond || 0)) / totalMentions_pond;
 
             comparisonSummary.innerHTML = `
                 <p>Esta divisão demonstra <span class="highlight">${policyRatio.toFixed(1)}%</span> de menções ponderadas em documentos de política e <span class="highlight">${patentRatio.toFixed(1)}%</span> em patentes.</p>
                 <p>O impacto acadêmico ponderado (leitores e citações) é <span class="highlight">${academicImpact.toFixed(1)}x</span> maior que o número total de menções, indicando ${academicImpact > 10 ? 'forte' : academicImpact > 5 ? 'moderado' : 'limitado'} engajamento acadêmico.</p>
             `;
 
+            const totalPond = totals.Total_mentions_pond || (
+                (totals.X_mentions_pond || 0) +
+                (totals.News_mentions_pond || 0) +
+                (totals.Facebook_mentions_pond || 0) +
+                (totals.Wikipedia_mentions_pond || 0) +
+                (totals.Blog_mentions_pond || 0) +
+                (totals.Policy_mentions_pond || 0) +
+                (totals.Patent_mentions_pond || 0) +
+                (totals.Video_mentions_pond || 0) +
+                (totals.Peer_review_mentions_pond || 0) +
+                (totals.Reddit_mentions_pond || 0) +
+                (totals.LinkedIn_mentions_pond || 0) +
+                (totals.Pinterest_mentions_pond || 0) +
+                (totals.Weibo_mentions_pond || 0) +
+                (totals.GooglePlus_mentions_pond || 0) +
+                (totals.F1000_mentions_pond || 0) +
+                (totals.QA_mentions_pond || 0) +
+                (totals.Syllabi_mentions_pond || 0)
+            );
             const mediaSummaryPond = document.getElementById('media-summary-pond');
-            const totalPond = Object.values(totals).reduce((acc, val) => acc + (typeof val === 'number' ? val : 0), 0);
-
+            //const totalPond = Object.values(totals).reduce((acc, val) => acc + (typeof val === 'number' ? val : 0), 0);
             const socialMediaPond = ((totals.X_mentions_pond || 0) + (totals.Facebook_mentions_pond || 0) + (totals.LinkedIn_mentions_pond || 0) + (totals.Reddit_mentions_pond || 0) + (totals.Pinterest_mentions_pond || 0) + (totals.GooglePlus_mentions_pond || 0) + (totals.Weibo_mentions_pond || 0)) / totalPond * 100;
-
             const traditionalMediaPond = ((totals.News_mentions_pond || 0) + (totals.Blog_mentions_pond || 0)) / totalPond * 100;
 
             mediaSummaryPond.innerHTML = `
@@ -1067,15 +1233,12 @@
                 (totals.Pinterest_mentions_pond || 0) +
                 (totals.GooglePlus_mentions_pond || 0) +
                 (totals.Weibo_mentions_pond || 0)
-            ) / totalMentions * 100;
+            ) / totalPond * 100;
 
             const traditionalMediaPercentage = (
                 (totals.News_mentions_pond || 0) +
                 (totals.Blog_mentions_pond || 0)
-            ) / totalMentions * 100;
-
-
-
+            ) / totalPond * 100;
 
             mediaSummary.innerHTML = `
                 <p>A distribuição de menções ponderadas mostra que <span class="highlight">${socialMediaPercentage.toFixed(1)}%</span> ocorrem em redes sociais, enquanto <span class="highlight">${traditionalMediaPercentage.toFixed(1)}%</span> são em mídia tradicional (notícias e blogs).</p>
@@ -1086,14 +1249,10 @@
                         (totals.QA_mentions_pond || 0) +
                         (totals.Syllabi_mentions_pond || 0) +
                         (totals.Wikipedia_mentions_pond || 0)
-                    ) / totalMentions * 100
+                    ) / totalPond * 100
                 ).toFixed(1)}%</span> das menções totais.</p>
             `;
         }
-
-
-
-
 
         // Iniciar carregamento dos dados quando a página carregar
         document.addEventListener('DOMContentLoaded', loadData);
